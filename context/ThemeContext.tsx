@@ -1,0 +1,60 @@
+"use client";
+
+import { createContext, useContext, useEffect, useState } from "react";
+
+type Theme = "dark" | "light";
+
+interface ThemeContextValue {
+  theme: Theme;
+  toggle: () => void;
+  mounted: boolean;
+}
+
+const ThemeContext = createContext<ThemeContextValue | null>(null);
+
+export function useTheme() {
+  const ctx = useContext(ThemeContext);
+  if (!ctx) throw new Error("useTheme must be used inside <ThemeProvider>");
+  return ctx;
+}
+
+export function ThemeProvider({ children }: { children: React.ReactNode }) {
+  const [theme, setTheme] = useState<Theme>("dark");
+  const [mounted, setMounted] = useState(false);
+
+  // ⚠️  Initialize from localStorage only on the client (avoid setState in effect)
+  useEffect(() => {
+    const stored = localStorage.getItem("ecoswap-theme") as Theme | null;
+    // Only update if different to avoid unnecessary re-renders
+    if (stored && stored !== theme) {
+      setTheme(stored);
+    }
+    setMounted(true);
+  }, []); // Empty dependency array - runs once on mount
+
+  // Update DOM and localStorage when theme changes (separate effect)
+  useEffect(() => {
+    if (!mounted) return;
+    const root = document.documentElement;
+    root.setAttribute("data-theme", theme);
+    
+    // Also toggle .dark class for Tailwind's dark mode utilities
+    if (theme === "dark") {
+      root.classList.add("dark");
+    } else {
+      root.classList.remove("dark");
+    }
+    
+    localStorage.setItem("ecoswap-theme", theme);
+  }, [theme, mounted]);
+
+  const toggle = () => setTheme((t) => (t === "dark" ? "light" : "dark"));
+
+  return (
+    <ThemeContext.Provider value={{ theme, toggle, mounted }}>
+      <div className={mounted ? theme : "dark"} style={{ minHeight: "100vh" }}>
+        {children}
+      </div>
+    </ThemeContext.Provider>
+  );
+}

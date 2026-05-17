@@ -23,7 +23,7 @@ export default async function AdminStationsPage() {
     }),
   ]);
 
-  const stations = all.map((s) => ({
+  const stations = all.map((s: typeof all[0]) => ({
     ...s,
     avgRating: s.stationReviews.length
       ? s.stationReviews.reduce((sum, r) => sum + r.rating, 0) / s.stationReviews.length
